@@ -1,0 +1,27 @@
+{
+  "name": "@linc-bot/cdk-appsync-contrib",
+  "version": "0.0.1",
+  "description": "WIP - CDK wrapper for AWS Appsync",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": "git@github.com:bitgenics/cdk-appsync.git",
+  "author": {
+    "name": "Linc",
+    "url": "https://linc.sh",
+    "organization": true
+  },
+  "license": "MIT",
+  "scripts": {
+    "tcs": "tcs",
+    "prepublish": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^3.7.3"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-appsync": "^1.18.0",
+    "@aws-cdk/aws-dynamodb": "^1.18.0",
+    "@aws-cdk/aws-iam": "^1.18.0",
+    "@aws-cdk/core": "^1.18.0"
+  }
+}
