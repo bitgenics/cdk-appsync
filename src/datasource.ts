@@ -1,4 +1,4 @@
-import { Arn, Construct } from '@aws-cdk/core'
+import { Arn, Construct, Resource } from '@aws-cdk/core'
 import { CfnDataSource, CfnResolver } from '@aws-cdk/aws-appsync'
 import { Table } from '@aws-cdk/aws-dynamodb'
 import { Role, ServicePrincipal } from '@aws-cdk/aws-iam'
@@ -17,12 +17,12 @@ export interface DynamoDBDataSourceProps {
   permission?: DynamoDBDataSourcePermission
 }
 
-export class DynamoDBDataSource extends Construct {
-  apiId: string
-  name: string
-  table: Table
-  permission: DynamoDBDataSourcePermission
-  resource: CfnDataSource
+export class DynamoDBDataSource extends Resource {
+  public readonly apiId: string
+  public readonly name: string
+  public readonly table: Table
+  public readonly permission: DynamoDBDataSourcePermission
+  private resource: CfnDataSource
   constructor(scope: Construct, id: string, props: DynamoDBDataSourceProps) {
     super(scope, id)
 

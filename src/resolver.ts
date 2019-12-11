@@ -6,10 +6,10 @@ export interface ResolverProps {
 }
 
 export class Resolver {
-  typeName: string
-  fieldName: string
-  requestMappingTemplate: string
-  responseMappingTemplate: string
+  public readonly typeName: string
+  public readonly fieldName: string
+  public readonly requestMappingTemplate: string
+  public readonly responseMappingTemplate: string
   constructor(props: ResolverProps) {
     this.typeName = props.typeName
     this.fieldName = props.fieldName

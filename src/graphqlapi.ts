@@ -1,5 +1,5 @@
 import { CfnGraphQLApi, CfnApiKey, CfnGraphQLSchema } from '@aws-cdk/aws-appsync'
-import { Construct } from '@aws-cdk/core'
+import { Construct, Resource } from '@aws-cdk/core'
 
 export interface GraphQLApiProps {
   name: string
@@ -7,9 +7,9 @@ export interface GraphQLApiProps {
   schema: string
 }
 
-export class GraphQLApi extends Construct {
-  apiId: string
-  schema: string
+export class GraphQLApi extends Resource {
+  public readonly apiId: string
+  public readonly schema: string
   constructor(scope: Construct, id: string, props: GraphQLApiProps) {
     super(scope, id)
     const { name, authenticationType, schema } = props
