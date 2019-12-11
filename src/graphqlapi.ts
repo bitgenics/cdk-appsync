@@ -15,7 +15,7 @@ export class GraphQLApi extends Construct {
     const { name, authenticationType, schema } = props
     this.schema = schema
 
-    const cfn_graphqlApi = new CfnGraphQLApi(scope, `${id}Resource`, {
+    const cfn_graphqlApi = new CfnGraphQLApi(scope, `Resource`, {
       name,
       authenticationType,
     })
@@ -25,7 +25,7 @@ export class GraphQLApi extends Construct {
       apiId: this.apiId,
     })
 
-    new CfnGraphQLSchema(scope, `${id}Schema`, {
+    new CfnGraphQLSchema(scope, `Schema`, {
       apiId: this.apiId,
       definition: schema,
     })
