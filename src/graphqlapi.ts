@@ -7,7 +7,11 @@ export interface GraphQLApiProps {
   schema: string
 }
 
-export class GraphQLApi extends Resource {
+export interface IGraphQLApi {
+  apiId: string
+}
+
+export class GraphQLApi extends Resource implements IGraphQLApi {
   public readonly apiId: string
   public readonly schema: string
   constructor(scope: Construct, id: string, props: GraphQLApiProps) {
@@ -29,5 +33,9 @@ export class GraphQLApi extends Resource {
       apiId: this.apiId,
       definition: schema,
     })
+  }
+
+  static fromApiId(apiId: string): IGraphQLApi {
+    return { apiId }
   }
 }

@@ -3,6 +3,7 @@ import { CfnDataSource, CfnResolver } from '@aws-cdk/aws-appsync'
 import { Table } from '@aws-cdk/aws-dynamodb'
 import { Role, ServicePrincipal } from '@aws-cdk/aws-iam'
 import { Resolver } from './resolver'
+import { IGraphQLApi } from './graphqlapi'
 
 export const enum DynamoDBDataSourcePermission {
   Read = 1,
@@ -11,14 +12,14 @@ export const enum DynamoDBDataSourcePermission {
 }
 
 export interface DynamoDBDataSourceProps {
-  apiId: string
+  api: IGraphQLApi
   table: Table
   name?: string
   permission?: DynamoDBDataSourcePermission
 }
 
 export class DynamoDBDataSource extends Resource {
-  public readonly apiId: string
+  public readonly api: IGraphQLApi
   public readonly name: string
   public readonly table: Table
   public readonly permission: DynamoDBDataSourcePermission
@@ -26,7 +27,7 @@ export class DynamoDBDataSource extends Resource {
   constructor(scope: Construct, id: string, props: DynamoDBDataSourceProps) {
     super(scope, id)
 
-    this.apiId = props.apiId
+    this.api = props.api
     this.table = props.table
     this.permission = props.permission || DynamoDBDataSourcePermission.ReadWrite
     this.name = props.name || `${this.table.tableName}DataSource`
@@ -47,7 +48,7 @@ export class DynamoDBDataSource extends Resource {
     const region = Arn.parse(this.table.tableArn).region
 
     this.resource = new CfnDataSource(this, 'Resource', {
-      apiId: this.apiId,
+      apiId: this.api.apiId,
       name: this.name,
       type: 'AMAZON_DYNAMODB',
       dynamoDbConfig: {
@@ -62,7 +63,7 @@ export class DynamoDBDataSource extends Resource {
     const { typeName, fieldName } = resolver
     const name = `${typeName}${fieldName}Resolver`
     const cfn_resolver = new CfnResolver(this, name, {
-      apiId: this.apiId,
+      apiId: this.api.apiId,
       typeName,
       fieldName,
       dataSourceName: this.name,
