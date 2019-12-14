@@ -23,7 +23,18 @@ export interface LambdaResolverProps {
   fieldName: string
   batch?: boolean
   includeHeaders?: boolean
+  responseMappingTemplate?: string
 }
+
+const responseMappingTemplate = `
+#if(!$util.isNull($context.result.stash)) 
+  #foreach($item in $context.result.stash.entrySet())
+    $util.qr($context.stash.put($item.key, $item.value))
+  #end
+#end
+
+$util.toJson($ctx.result.result)
+`
 
 export class LambdaResolver extends Resolver {
   constructor(props: LambdaResolverProps) {
@@ -44,6 +55,7 @@ export class LambdaResolver extends Resolver {
           "prev": $utils.toJson($context.prev)
         }
       }`,
+      responseMappingTemplate,
     }
     super(full_props)
   }
