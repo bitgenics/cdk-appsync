@@ -113,7 +113,7 @@ export class LambdaDataSource extends Resource implements IDataSource {
     super(scope, id)
     this.api = props.api
     this.description = props.description
-    this.name = props.name || `Lambda${props.lambda.functionName}Datasource`
+    this.name = props.name || `${props.lambda.functionName}Datasource`
     this.lambda = props.lambda
 
     const role = new Role(this, 'Role', {
