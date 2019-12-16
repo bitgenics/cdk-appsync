@@ -48,8 +48,6 @@ abstract class ResolverBase extends Resource implements IResolver {
       }
     }
   }
-
-  protected addDataSourceDependency(cfnResolver: CfnResolver) {}
 }
 
 export class Resolver extends ResolverBase {
