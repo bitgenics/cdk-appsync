@@ -1,10 +1,9 @@
-import { Arn, Construct, Resource } from '@aws-cdk/core'
-import { CfnDataSource, CfnResolver } from '@aws-cdk/aws-appsync'
+import { Arn, Construct, Resource, IResource } from '@aws-cdk/core'
+import { CfnDataSource } from '@aws-cdk/aws-appsync'
 import { Table } from '@aws-cdk/aws-dynamodb'
 import { Role, ServicePrincipal } from '@aws-cdk/aws-iam'
 import { Function } from '@aws-cdk/aws-lambda'
 
-import { Resolver } from './resolver'
 import { IGraphQLApi } from './graphqlapi'
 
 export const enum DynamoDBDataSourcePermission {
@@ -13,26 +12,32 @@ export const enum DynamoDBDataSourcePermission {
   ReadWrite,
 }
 
-export interface DynamoDBDataSourceProps {
+interface DataSourceProps {
   api: IGraphQLApi
-  table: Table
   name?: string
+}
+
+export interface IDataSource extends IResource {
+  api: IGraphQLApi
+  name: string
+}
+
+export interface DynamoDBDataSourceProps extends DataSourceProps {
+  table: Table
   permission?: DynamoDBDataSourcePermission
 }
 
-export class DynamoDBDataSource extends Resource {
+export class DynamoDBDataSource extends Resource implements IDataSource {
   public readonly api: IGraphQLApi
   public readonly name: string
   public readonly table: Table
   public readonly permission: DynamoDBDataSourcePermission
-  private resource: CfnDataSource
   constructor(scope: Construct, id: string, props: DynamoDBDataSourceProps) {
     super(scope, id)
-
     this.api = props.api
+    this.name = props.name || `${props.table.tableName}DataSource`
     this.table = props.table
     this.permission = props.permission || DynamoDBDataSourcePermission.ReadWrite
-    this.name = props.name || `${this.table.tableName}DataSource`
 
     const role = new Role(this, 'Role', {
       assumedBy: new ServicePrincipal('appsync.amazonaws.com'),
@@ -49,7 +54,7 @@ export class DynamoDBDataSource extends Resource {
 
     const region = Arn.parse(this.table.tableArn).region
 
-    this.resource = new CfnDataSource(this, 'Resource', {
+    new CfnDataSource(this, 'Resource', {
       apiId: this.api.apiId,
       name: this.name,
       type: 'AMAZON_DYNAMODB',
@@ -60,39 +65,22 @@ export class DynamoDBDataSource extends Resource {
       serviceRoleArn: role.roleArn,
     })
   }
-
-  public addResolver(resolver: Resolver) {
-    const { typeName, fieldName } = resolver
-    const name = `${typeName}${fieldName}Resolver`
-    const cfn_resolver = new CfnResolver(this, name, {
-      apiId: this.api.apiId,
-      typeName,
-      fieldName,
-      dataSourceName: this.name,
-      requestMappingTemplate: resolver.requestMappingTemplate,
-      responseMappingTemplate: resolver.responseMappingTemplate,
-    })
-    cfn_resolver.addDependsOn(this.resource)
-  }
 }
 
-export interface LambdaDataSourceProps {
-  api: IGraphQLApi
+export interface LambdaDataSourceProps extends DataSourceProps {
   lambda: Function
-  name?: string
 }
 
-export class LambdaDataSource extends Resource {
+export class LambdaDataSource extends Resource implements IDataSource {
   public readonly api: IGraphQLApi
-  public readonly lambda: Function
   public readonly name: string
-  private readonly resource: CfnDataSource
+  public readonly lambda: Function
 
   constructor(scope: Construct, id: string, props: LambdaDataSourceProps) {
     super(scope, id)
     this.api = props.api
+    this.name = props.name || `Lambda${props.lambda.functionName}Datasource`
     this.lambda = props.lambda
-    this.name = props.name || `Lambda${this.lambda.functionName}Datasource`
 
     const role = new Role(this, 'Role', {
       assumedBy: new ServicePrincipal('appsync.amazonaws.com'),
@@ -100,7 +88,7 @@ export class LambdaDataSource extends Resource {
 
     this.lambda.grantInvoke(role)
 
-    this.resource = new CfnDataSource(this, 'Resource', {
+    new CfnDataSource(this, 'Resource', {
       apiId: this.api.apiId,
       name: this.name,
       type: 'AWS_LAMBDA',
@@ -109,19 +97,5 @@ export class LambdaDataSource extends Resource {
       },
       serviceRoleArn: role.roleArn,
     })
-  }
-
-  public addResolver(resolver: Resolver) {
-    const { typeName, fieldName } = resolver
-    const name = `${typeName}${fieldName}Resolver`
-    const cfn_resolver = new CfnResolver(this, name, {
-      apiId: this.api.apiId,
-      typeName,
-      fieldName,
-      dataSourceName: this.name,
-      requestMappingTemplate: resolver.requestMappingTemplate,
-      responseMappingTemplate: resolver.responseMappingTemplate,
-    })
-    cfn_resolver.addDependsOn(this.resource)
   }
 }
