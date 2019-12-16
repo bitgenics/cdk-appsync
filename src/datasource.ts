@@ -13,13 +13,41 @@ export const enum DynamoDBDataSourcePermission {
 }
 
 interface DataSourceProps {
-  api: IGraphQLApi
-  name?: string
+  readonly api: IGraphQLApi
+  readonly description?: string
+  readonly name?: string
+}
+
+export const enum DataSourceType {
+  AMAZON_DYNAMODB = 'AMAZON_DYNAMODB',
+  AMAZON_ELASTICSEARCH = 'AMAZON_ELASTICSEARCH',
+  AWS_LAMBDA = 'AWS_LAMBDA',
+  NONE = 'NONE',
+  HTTP = 'HTTP',
+  RELATIONAL_DATABASE = 'RELATIONAL_DATABASE',
 }
 
 export interface IDataSource extends IResource {
-  api: IGraphQLApi
-  name: string
+  readonly api: IGraphQLApi
+  readonly name: string
+  readonly type: DataSourceType
+}
+
+export class NoneDataSource extends Resource implements IDataSource {
+  readonly api: IGraphQLApi
+  readonly name: string
+  readonly type: DataSourceType = DataSourceType.NONE
+  constructor(scope: Construct, id: string, props: DataSourceProps) {
+    super(scope, id)
+    this.api = props.api
+    this.name = props.name || 'NoneDataSource'
+
+    new CfnDataSource(this, 'Resource', {
+      apiId: this.api.apiId,
+      name: this.name,
+      type: this.type,
+    })
+  }
 }
 
 export interface DynamoDBDataSourceProps extends DataSourceProps {
@@ -29,12 +57,15 @@ export interface DynamoDBDataSourceProps extends DataSourceProps {
 
 export class DynamoDBDataSource extends Resource implements IDataSource {
   public readonly api: IGraphQLApi
+  public readonly description?: string
   public readonly name: string
   public readonly table: Table
   public readonly permission: DynamoDBDataSourcePermission
+  public readonly type: DataSourceType = DataSourceType.AMAZON_DYNAMODB
   constructor(scope: Construct, id: string, props: DynamoDBDataSourceProps) {
     super(scope, id)
     this.api = props.api
+    this.description = props.description
     this.name = props.name || `${props.table.tableName}DataSource`
     this.table = props.table
     this.permission = props.permission || DynamoDBDataSourcePermission.ReadWrite
@@ -56,8 +87,9 @@ export class DynamoDBDataSource extends Resource implements IDataSource {
 
     new CfnDataSource(this, 'Resource', {
       apiId: this.api.apiId,
+      description: this.description,
       name: this.name,
-      type: 'AMAZON_DYNAMODB',
+      type: this.type,
       dynamoDbConfig: {
         tableName: this.table.tableName,
         awsRegion: region!,
@@ -73,12 +105,14 @@ export interface LambdaDataSourceProps extends DataSourceProps {
 
 export class LambdaDataSource extends Resource implements IDataSource {
   public readonly api: IGraphQLApi
+  public readonly description?: string
   public readonly name: string
   public readonly lambda: Function
-
+  public readonly type: DataSourceType = DataSourceType.AWS_LAMBDA
   constructor(scope: Construct, id: string, props: LambdaDataSourceProps) {
     super(scope, id)
     this.api = props.api
+    this.description = props.description
     this.name = props.name || `Lambda${props.lambda.functionName}Datasource`
     this.lambda = props.lambda
 
@@ -90,8 +124,9 @@ export class LambdaDataSource extends Resource implements IDataSource {
 
     new CfnDataSource(this, 'Resource', {
       apiId: this.api.apiId,
+      description: this.description,
       name: this.name,
-      type: 'AWS_LAMBDA',
+      type: this.type,
       lambdaConfig: {
         lambdaFunctionArn: this.lambda.functionArn,
       },
