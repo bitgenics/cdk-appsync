@@ -62,7 +62,9 @@ export interface GraphQLApiProps {
 }
 
 export interface IGraphQLApi {
-  apiId: string
+  readonly apiId: string
+  readonly schema: string
+  readonly url: string
 }
 
 const authenticationToCfn = (
@@ -144,11 +146,5 @@ export class GraphQLApi extends Resource implements IGraphQLApi {
       description: resource.description,
       expires: resource.expires,
     }
-  }
-
-  addCloudfrontCustomDomain() {}
-
-  static fromApiId(apiId: string): IGraphQLApi {
-    return { apiId }
   }
 }
