@@ -8,6 +8,47 @@ export const enum FieldLogLevel {
   ALL = 'ALL',
 }
 
+export const enum AuthenticationType {
+  API_KEY = 'API_KEY',
+  AWS_IAM = 'AWS_IAM',
+  AMAZON_COGNITO_USER_POOLS = 'AMAZON_COGNITO_USER_POOLS',
+  OPENID_CONNECT = 'OPENID_CONNECT',
+}
+
+export abstract class AuthenticationProviderProps {
+  public readonly authenticationType: AuthenticationType
+  constructor(authicationType: AuthenticationType) {
+    this.authenticationType = authicationType
+  }
+}
+
+export class ApiKeyProviderProps extends AuthenticationProviderProps {
+  constructor() {
+    super(AuthenticationType.API_KEY)
+  }
+}
+
+export class IAMProviderProps extends AuthenticationProviderProps {
+  constructor() {
+    super(AuthenticationType.AWS_IAM)
+  }
+}
+
+export interface OIDCProviderConfig {
+  issuer: string
+  authTTL?: number
+  clientId?: string
+  iatTTL?: number
+}
+
+export class OIDCProviderProps extends AuthenticationProviderProps {
+  public readonly config: OIDCProviderConfig
+  constructor(config: OIDCProviderConfig) {
+    super(AuthenticationType.OPENID_CONNECT)
+    this.config = config
+  }
+}
+
 export interface LogConfig {
   excludeVerboseContent: boolean
   fieldLogLevel: FieldLogLevel
@@ -15,7 +56,7 @@ export interface LogConfig {
 
 export interface GraphQLApiProps {
   name: string
-  authenticationType: string
+  defaultAuthentication: AuthenticationProviderProps
   schema: string
   logConfig?: LogConfig
 }
@@ -24,12 +65,27 @@ export interface IGraphQLApi {
   apiId: string
 }
 
+const authenticationToCfn = (
+  props: AuthenticationProviderProps
+): CfnGraphQLApi.AdditionalAuthenticationProviderProperty => {
+  let openIdConnectConfig
+  if (props instanceof OIDCProviderProps) {
+    openIdConnectConfig = props.config
+  }
+
+  return {
+    authenticationType: props.authenticationType,
+    openIdConnectConfig,
+  }
+}
+
 export class GraphQLApi extends Resource implements IGraphQLApi {
   public readonly apiId: string
   public readonly schema: string
+  public readonly url: string
   constructor(scope: Construct, id: string, props: GraphQLApiProps) {
     super(scope, id)
-    const { name, authenticationType, schema } = props
+    const { name, defaultAuthentication, schema } = props
     this.schema = schema
 
     const logProps = props.logConfig || {
@@ -44,20 +100,26 @@ export class GraphQLApi extends Resource implements IGraphQLApi {
     })
     const logConfig = { ...logProps, cloudWatchLogsRoleArn: role.roleArn }
 
+    const cfnAuthenticationProps = authenticationToCfn(defaultAuthentication)
     const cfn_graphqlApi = new CfnGraphQLApi(scope, `Resource`, {
       name,
-      authenticationType,
       logConfig,
+      ...cfnAuthenticationProps,
     })
     this.apiId = cfn_graphqlApi.attrApiId
-
-    new CfnApiKey(scope, 'ApiKey', {
-      apiId: this.apiId,
-    })
+    this.url = cfn_graphqlApi.attrGraphQlUrl
 
     new CfnGraphQLSchema(scope, `Schema`, {
       apiId: this.apiId,
       definition: schema,
+    })
+  }
+
+  createApiKey(scope: Construct, description?: string, expires?: number) {
+    new CfnApiKey(scope, 'ApiKey', {
+      apiId: this.apiId,
+      description,
+      expires,
     })
   }
 
