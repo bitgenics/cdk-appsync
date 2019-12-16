@@ -79,6 +79,21 @@ const authenticationToCfn = (
   }
 }
 
+export interface ApiKeyProps {
+  scope: Construct
+  id?: string
+  description?: string
+  expires?: number
+}
+
+export interface ApiKey {
+  readonly api: IGraphQLApi
+  readonly key: string
+  readonly arn: string
+  readonly description?: string
+  readonly expires?: number
+}
+
 export class GraphQLApi extends Resource implements IGraphQLApi {
   public readonly apiId: string
   public readonly schema: string
@@ -115,13 +130,23 @@ export class GraphQLApi extends Resource implements IGraphQLApi {
     })
   }
 
-  createApiKey(scope: Construct, description?: string, expires?: number) {
-    new CfnApiKey(scope, 'ApiKey', {
+  createApiKey(scope: Construct, props: ApiKeyProps): ApiKey {
+    const id = props.id || 'ApiKey'
+    const resource = new CfnApiKey(scope, id, {
       apiId: this.apiId,
-      description,
-      expires,
+      description: props.description,
+      expires: props.expires,
     })
+    return {
+      api: this,
+      key: resource.attrApiKey,
+      arn: resource.attrArn,
+      description: resource.description,
+      expires: resource.expires,
+    }
   }
+
+  addCloudfrontCustomDomain() {}
 
   static fromApiId(apiId: string): IGraphQLApi {
     return { apiId }
